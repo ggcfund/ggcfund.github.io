@@ -149,11 +149,17 @@
     </div>
 
     <script>
-        // 动效核心系统
+        // 系统配置参数
+        const CONFIG = {
+            DROP_SPEED: 0.5,    // 数字雨速度（原速度的50%）
+            PARTICLE_COUNT: 150, // 粒子数量
+            PARTICLE_SIZE: { min: 3, max: 8 } // 粒子尺寸
+        };
+
         let isDark = true;
         const mouse = { x: null, y: null };
 
-        // 数字雨特效
+        // 数字雨特效（速度减慢版）
         class DigitalRain {
             constructor(canvas) {
                 this.canvas = canvas;
@@ -185,16 +191,16 @@
 
                     this.ctx.fillText(char, x, y);
 
-                    if (y > this.canvas.height && Math.random() > 0.975) {
+                    if (y > this.canvas.height && Math.random() > 0.96) { // 调整重置概率
                         this.drops[i] = 0;
                     }
-                    this.drops[i]++;
+                    this.drops[i] += CONFIG.DROP_SPEED; // 应用减慢速度
                 }
                 requestAnimationFrame(() => this.animate());
             }
         }
 
-        // 黄金粒子系统
+        // 增强版粒子系统
         class GoldenParticle {
             constructor(canvas, ctx) {
                 this.canvas = canvas;
@@ -206,7 +212,7 @@
             reset(init) {
                 this.x = init ? Math.random() * this.canvas.width : -50;
                 this.y = Math.random() * this.canvas.height;
-                this.radius = Math.random() * 5 + 3;
+                this.radius = Math.random() * (CONFIG.PARTICLE_SIZE.max - CONFIG.PARTICLE_SIZE.min) + CONFIG.PARTICLE_SIZE.min;
                 this.velocity = {
                     x: (Math.random() - 0.5) * 0.8,
                     y: (Math.random() - 0.5) * 0.8
@@ -215,7 +221,9 @@
             }
 
             updateColor() {
-                this.color = `hsla(45, 85%, ${isDark ? '60%' : '45%'}, ${this.alpha})`;
+                const hue = isDark ? 45 : 35;
+                const saturation = isDark ? '85%' : '75%';
+                this.color = `hsla(${hue}, ${saturation}, ${isDark ? '60%' : '45%'}, ${this.alpha})`;
             }
 
             draw() {
@@ -235,18 +243,20 @@
             }
 
             update() {
+                // 鼠标互动
                 if (mouse.x && mouse.y) {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    if (dist < 100) {
-                        const force = (100 - dist) / 50;
+                    if (dist < 120) {
+                        const force = (120 - dist) / 60;
                         this.x += (dx / dist) * force;
                         this.y += (dy / dist) * force;
                     }
                 }
 
+                // 边界处理
                 if (this.x < -this.radius || this.x > this.canvas.width + this.radius ||
                     this.y < -this.radius || this.y > this.canvas.height + this.radius) {
                     this.reset(false);
@@ -266,7 +276,7 @@
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
             const ctx = particleCanvas.getContext('2d');
-            particles = Array.from({ length: 120 }, () => new GoldenParticle(particleCanvas, ctx));
+            particles = Array.from({ length: CONFIG.PARTICLE_COUNT }, () => new GoldenParticle(particleCanvas, ctx));
         }
 
         function animateParticles() {
@@ -279,12 +289,28 @@
             requestAnimationFrame(animateParticles);
         }
 
-        // 事件监听
+        // 事件处理
         function handleMove(e) {
             mouse.x = e.clientX || e.touches[0].clientX;
             mouse.y = e.clientY || e.touches[0].clientY;
         }
 
+        // 主题切换功能
+        function toggleTheme() {
+            isDark = !isDark;
+            const theme = isDark ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.querySelector('.theme-toggle').textContent = isDark ? '深色模式' : '浅色模式';
+            
+            // 更新粒子颜色
+            particles.forEach(p => p.updateColor());
+            
+            // 重置数字雨
+            digitalCanvas.getContext('2d').clearRect(0, 0, digitalCanvas.width, digitalCanvas.height);
+            new DigitalRain(digitalCanvas);
+        }
+
+        // 启动系统
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('touchmove', (e) => {
             e.preventDefault();
@@ -300,15 +326,7 @@
             initParticles();
         });
 
-        // 主题切换
-        function toggleTheme() {
-            isDark = !isDark;
-            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-            document.querySelector('.theme-toggle').textContent = isDark ? '深色模式' : '浅色模式';
-            particles.forEach(p => p.updateColor());
-        }
-
-        // 启动系统
+        // 初始化
         new DigitalRain(digitalCanvas);
         initParticles();
         animateParticles();
