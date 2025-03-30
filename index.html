@@ -40,11 +40,12 @@
         }
 
         #digitalRain {
-            z-index: -2; /* 数字雨在底层 */
+            z-index: -2;
+            image-rendering: crisp-edges; /* 增强数字雨清晰度 */
         }
 
         #particles {
-            z-index: -1; /* 粒子在上层 */
+            z-index: -1;
         }
 
         .container {
@@ -53,14 +54,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem 20px; /* 移动端留白 */
+            padding: 2rem 20px;
         }
 
         header {
             width: 100%;
             display: flex;
             justify-content: space-between;
-            max-width: 1200px; /* 桌面端限制最大宽度 */
+            max-width: 1200px;
         }
 
         .theme-toggle {
@@ -85,10 +86,10 @@
 
         .company-name {
             margin-top: 15vh;
-            max-width: 400px; /* 响应式调整 */
+            max-width: min(400px, 90vw); /* 动态限制最大宽度 */
             width: 100%;
             opacity: 0.9;
-            padding: 0 20px; /* 移动端留白 */
+            padding: 0 20px;
         }
 
         footer {
@@ -155,14 +156,14 @@
     </div>
 
     <script>
-        // 数字雨系统（速度减半）
+        // 增强版数字雨系统
         class DigitalRain {
             constructor(canvas) {
                 this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.characters = 'GOLDGRID01';
+                this.ctx = canvas.getContext('2d', { alpha: false }); // 禁用透明度
+                this.characters = 'GOLDGRIDCAPITAL01';
                 this.drops = [];
-                this.fontSize = 22;
+                this.fontSize = 24; // 增大字号
                 this.init();
                 this.animate();
             }
@@ -172,13 +173,14 @@
                 this.canvas.height = window.innerHeight;
                 this.columns = Math.floor(this.canvas.width / this.fontSize);
                 this.drops = Array(this.columns).fill(1);
+                this.ctx.textBaseline = 'top'; // 优化文字对齐
             }
 
             animate() {
-                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 this.ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gold');
-                this.ctx.font = `${this.fontSize}px monospace`;
+                this.ctx.font = `bold ${this.fontSize}px monospace`; // 加粗字体
 
                 for (let i = 0; i < this.drops.length; i++) {
                     const char = this.characters[Math.floor(Math.random() * this.characters.length)];
@@ -190,39 +192,36 @@
                     if (y > this.canvas.height && Math.random() > 0.975) {
                         this.drops[i] = 0;
                     }
-                    this.drops[i] += 0.5; // 速度减半
+                    this.drops[i] += 0.5; // 保持半速
                 }
                 requestAnimationFrame(() => this.animate());
             }
         }
 
-        // 黄金粒子系统（布朗运动+增强交互）
+        // 增强版粒子系统
         class GoldenParticle {
             constructor(canvas, ctx) {
                 this.canvas = canvas;
                 this.ctx = ctx;
+                this.baseAlpha = Math.random() * 0.4 + 0.6;
                 this.reset(true);
-                this.alpha = Math.random() * 0.3 + 0.5;
-                this.baseVelocity = {
-                    x: (Math.random() - 0.5) * 0.4,
-                    y: (Math.random() - 0.5) * 0.4
-                };
+                this.interactionForce = 0;
             }
 
             reset(init) {
                 this.x = init ? Math.random() * this.canvas.width : -50;
                 this.y = Math.random() * this.canvas.height;
-                this.radius = Math.random() * 4 + 2;
+                this.baseRadius = Math.random() * 3 + 2;
+                this.radius = this.baseRadius;
                 this.velocity = {
-                    x: this.baseVelocity.x + (Math.random() - 0.5) * 0.2,
-                    y: this.baseVelocity.y + (Math.random() - 0.5) * 0.2
+                    x: (Math.random() - 0.5) * 0.3,
+                    y: (Math.random() - 0.5) * 0.3
                 };
                 this.updateColor();
             }
 
             updateColor() {
-                // 更深的金黄色
-                this.color = `hsla(45, 85%, ${isDark ? '40%' : '30%'}, ${this.alpha})`;
+                this.color = `hsla(45, 85%, ${isDark ? '45%' : '35%'}, ${this.baseAlpha})`; // 调整颜色亮度
             }
 
             draw() {
@@ -237,29 +236,31 @@
                 this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 this.ctx.fillStyle = grad;
                 this.ctx.shadowColor = this.color;
-                this.ctx.shadowBlur = 20; // 增强光晕
+                this.ctx.shadowBlur = 25; // 增强光晕效果
                 this.ctx.fill();
             }
 
             update() {
-                // 布朗运动
-                this.velocity.x += (Math.random() - 0.5) * 0.08;
-                this.velocity.y += (Math.random() - 0.5) * 0.08;
-                
-                // 增强鼠标交互
+                // 布朗运动增强
+                this.velocity.x += (Math.random() - 0.5) * 0.1;
+                this.velocity.y += (Math.random() - 0.5) * 0.1;
+                this.velocity.x = Math.max(-0.8, Math.min(0.8, this.velocity.x));
+                this.velocity.y = Math.max(-0.8, Math.min(0.8, this.velocity.y));
+
+                // 鼠标交互增强
                 if (mouse.x && mouse.y) {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
-                    const maxDist = 150;
+                    const maxDist = 200;
 
                     if (dist < maxDist) {
-                        const force = (maxDist - dist) / 30;
+                        const force = (maxDist - dist) / 50;
                         this.x += (dx / dist) * force;
                         this.y += (dy / dist) * force;
-                        this.radius = Math.min(6, this.radius + 0.1);
+                        this.radius = Math.min(8, this.radius + 0.2);
                     } else {
-                        this.radius = Math.max(2, this.radius - 0.05);
+                        this.radius = Math.max(this.baseRadius, this.radius - 0.1);
                     }
                 }
 
@@ -285,7 +286,7 @@
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
             const ctx = particleCanvas.getContext('2d');
-            particles = Array.from({ length: 80 }, () => new GoldenParticle(particleCanvas, ctx));
+            particles = Array.from({ length: 150 }, () => new GoldenParticle(particleCanvas, ctx)); // 增加粒子数量
         }
 
         function animateParticles() {
