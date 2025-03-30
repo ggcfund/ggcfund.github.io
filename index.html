@@ -192,7 +192,7 @@
                     if (y > this.canvas.height && Math.random() > 0.975) {
                         this.drops[i] = 0;
                     }
-                    this.drops[i] += 0.2; // 保持半速
+                    this.drops[i]++; // 保持半速
                 }
                 requestAnimationFrame(() => this.animate());
             }
