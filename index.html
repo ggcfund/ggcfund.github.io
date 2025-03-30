@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <title>Gold Grid Capital 金格量化</title>
@@ -149,15 +149,9 @@
     </div>
 
     <script>
-        // 主题切换系统
+        // 动效核心系统
         let isDark = true;
-        function toggleTheme() {
-            isDark = !isDark;
-            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-            document.querySelector('.theme-toggle').textContent = isDark ? '深色模式' : '浅色模式';
-            initParticles();
-            initDigitalRain();
-        }
+        const mouse = { x: null, y: null };
 
         // 数字雨特效
         class DigitalRain {
@@ -168,16 +162,17 @@
                 this.drops = [];
                 this.fontSize = 22;
                 this.init();
+                this.animate();
             }
 
             init() {
                 this.canvas.width = window.innerWidth;
                 this.canvas.height = window.innerHeight;
-                this.columns = this.canvas.width / this.fontSize;
-                this.drops = Array(Math.floor(this.columns)).fill(1);
+                this.columns = Math.floor(this.canvas.width / this.fontSize);
+                this.drops = Array(this.columns).fill(1);
             }
 
-            draw() {
+            animate() {
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 this.ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gold');
@@ -195,6 +190,7 @@
                     }
                     this.drops[i]++;
                 }
+                requestAnimationFrame(() => this.animate());
             }
         }
 
@@ -210,11 +206,15 @@
             reset(init) {
                 this.x = init ? Math.random() * this.canvas.width : -50;
                 this.y = Math.random() * this.canvas.height;
-                this.radius = Math.random() * 5 + 3; // 3-8px粒子尺寸
+                this.radius = Math.random() * 5 + 3;
                 this.velocity = {
                     x: (Math.random() - 0.5) * 0.8,
                     y: (Math.random() - 0.5) * 0.8
                 };
+                this.updateColor();
+            }
+
+            updateColor() {
                 this.color = `hsla(45, 85%, ${isDark ? '60%' : '45%'}, ${this.alpha})`;
             }
 
@@ -234,16 +234,16 @@
                 this.ctx.fill();
             }
 
-            update(mouse) {
+            update() {
                 if (mouse.x && mouse.y) {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
                     if (dist < 100) {
-                        const angle = Math.atan2(dy, dx);
-                        this.x += Math.cos(angle) * 2;
-                        this.y += Math.sin(angle) * 2;
+                        const force = (100 - dist) / 50;
+                        this.x += (dx / dist) * force;
+                        this.y += (dy / dist) * force;
                     }
                 }
 
@@ -260,54 +260,58 @@
         // 系统初始化
         const digitalCanvas = document.getElementById('digitalRain');
         const particleCanvas = document.getElementById('particles');
-        let digitalRain, particles = [];
-        const mouse = { x: null, y: null };
+        let particles = [];
 
         function initParticles() {
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
-            particles = Array.from({ length: 100 }, () => new GoldenParticle(particleCanvas, particleCanvas.getContext('2d')));
+            const ctx = particleCanvas.getContext('2d');
+            particles = Array.from({ length: 120 }, () => new GoldenParticle(particleCanvas, ctx));
         }
 
-        function initDigitalRain() {
-            digitalRain = new DigitalRain(digitalCanvas);
-        }
-
-        function animate() {
-            const pCtx = particleCanvas.getContext('2d');
-            pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-            
-            if(digitalRain) digitalRain.draw();
-            
-            particles.forEach(particle => {
-                particle.update(mouse);
-                particle.draw();
+        function animateParticles() {
+            const ctx = particleCanvas.getContext('2d');
+            ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
             });
-            
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateParticles);
         }
 
         // 事件监听
-        window.addEventListener('resize', () => {
-            initParticles();
-            initDigitalRain();
-        });
+        function handleMove(e) {
+            mouse.x = e.clientX || e.touches[0].clientX;
+            mouse.y = e.clientY || e.touches[0].clientY;
+        }
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
-
+        window.addEventListener('mousemove', handleMove);
         window.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            mouse.x = e.touches[0].clientX;
-            mouse.y = e.touches[0].clientY;
+            handleMove(e);
         }, { passive: false });
 
+        window.addEventListener('resize', () => {
+            digitalCanvas.width = window.innerWidth;
+            digitalCanvas.height = window.innerHeight;
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            new DigitalRain(digitalCanvas);
+            initParticles();
+        });
+
+        // 主题切换
+        function toggleTheme() {
+            isDark = !isDark;
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            document.querySelector('.theme-toggle').textContent = isDark ? '深色模式' : '浅色模式';
+            particles.forEach(p => p.updateColor());
+        }
+
         // 启动系统
+        new DigitalRain(digitalCanvas);
         initParticles();
-        initDigitalRain();
-        animate();
+        animateParticles();
     </script>
 </body>
 </html>
