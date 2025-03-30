@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Gold Grid Capital</title>
+    <title>Gold Grid Capital-金格量化</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         :root {
@@ -37,11 +37,14 @@
             position: fixed;
             top: 0;
             left: 0;
-            z-index: -1;
         }
 
         #digitalRain {
-            z-index: -2;
+            z-index: -2; /* 数字雨在底层 */
+        }
+
+        #particles {
+            z-index: -1; /* 粒子在上层 */
         }
 
         .container {
@@ -50,13 +53,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem;
+            padding: 2rem 20px; /* 移动端留白 */
         }
 
         header {
             width: 100%;
             display: flex;
             justify-content: space-between;
+            max-width: 1200px; /* 桌面端限制最大宽度 */
         }
 
         .theme-toggle {
@@ -81,8 +85,10 @@
 
         .company-name {
             margin-top: 15vh;
-            width: 400px;
+            max-width: 400px; /* 响应式调整 */
+            width: 100%;
             opacity: 0.9;
+            padding: 0 20px; /* 移动端留白 */
         }
 
         footer {
@@ -149,11 +155,7 @@
     </div>
 
     <script>
-        // 动效核心系统
-        let isDark = true;
-        const mouse = { x: null, y: null };
-
-        // 数字雨特效
+        // 数字雨系统（速度减半）
         class DigitalRain {
             constructor(canvas) {
                 this.canvas = canvas;
@@ -188,34 +190,39 @@
                     if (y > this.canvas.height && Math.random() > 0.975) {
                         this.drops[i] = 0;
                     }
-                    this.drops[i]++;
+                    this.drops[i] += 0.5; // 速度减半
                 }
                 requestAnimationFrame(() => this.animate());
             }
         }
 
-        // 黄金粒子系统
+        // 黄金粒子系统（布朗运动+增强交互）
         class GoldenParticle {
             constructor(canvas, ctx) {
                 this.canvas = canvas;
                 this.ctx = ctx;
                 this.reset(true);
-                this.alpha = Math.random() * 0.5 + 0.5;
+                this.alpha = Math.random() * 0.3 + 0.5;
+                this.baseVelocity = {
+                    x: (Math.random() - 0.5) * 0.4,
+                    y: (Math.random() - 0.5) * 0.4
+                };
             }
 
             reset(init) {
                 this.x = init ? Math.random() * this.canvas.width : -50;
                 this.y = Math.random() * this.canvas.height;
-                this.radius = Math.random() * 5 + 3;
+                this.radius = Math.random() * 4 + 2;
                 this.velocity = {
-                    x: (Math.random() - 0.5) * 0.8,
-                    y: (Math.random() - 0.5) * 0.8
+                    x: this.baseVelocity.x + (Math.random() - 0.5) * 0.2,
+                    y: this.baseVelocity.y + (Math.random() - 0.5) * 0.2
                 };
                 this.updateColor();
             }
 
             updateColor() {
-                this.color = `hsla(45, 85%, ${isDark ? '60%' : '45%'}, ${this.alpha})`;
+                // 更深的金黄色
+                this.color = `hsla(45, 85%, ${isDark ? '40%' : '30%'}, ${this.alpha})`;
             }
 
             draw() {
@@ -230,23 +237,33 @@
                 this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 this.ctx.fillStyle = grad;
                 this.ctx.shadowColor = this.color;
-                this.ctx.shadowBlur = 15;
+                this.ctx.shadowBlur = 20; // 增强光晕
                 this.ctx.fill();
             }
 
             update() {
+                // 布朗运动
+                this.velocity.x += (Math.random() - 0.5) * 0.08;
+                this.velocity.y += (Math.random() - 0.5) * 0.08;
+                
+                // 增强鼠标交互
                 if (mouse.x && mouse.y) {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
+                    const maxDist = 150;
 
-                    if (dist < 100) {
-                        const force = (100 - dist) / 50;
+                    if (dist < maxDist) {
+                        const force = (maxDist - dist) / 30;
                         this.x += (dx / dist) * force;
                         this.y += (dy / dist) * force;
+                        this.radius = Math.min(6, this.radius + 0.1);
+                    } else {
+                        this.radius = Math.max(2, this.radius - 0.05);
                     }
                 }
 
+                // 边界控制
                 if (this.x < -this.radius || this.x > this.canvas.width + this.radius ||
                     this.y < -this.radius || this.y > this.canvas.height + this.radius) {
                     this.reset(false);
@@ -261,12 +278,14 @@
         const digitalCanvas = document.getElementById('digitalRain');
         const particleCanvas = document.getElementById('particles');
         let particles = [];
+        let isDark = true;
+        const mouse = { x: null, y: null };
 
         function initParticles() {
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
             const ctx = particleCanvas.getContext('2d');
-            particles = Array.from({ length: 120 }, () => new GoldenParticle(particleCanvas, ctx));
+            particles = Array.from({ length: 80 }, () => new GoldenParticle(particleCanvas, ctx));
         }
 
         function animateParticles() {
