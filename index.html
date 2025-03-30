@@ -2,25 +2,20 @@
 <html lang="zh-CN" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <title>Gold Grid Capital - 金格量化</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Gold Grid Capital - 专注于量化投资与创新金融解决方案">
-    <meta name="keywords" content="量化投资, 黄金网格, 资产管理, 算法交易">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+    <title>Gold Grid Capital</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         :root {
-            --primary: #ffd700;
-            --primary-light: #c5a642;
-            --background: #0a0a0a;
+            --bg: #0a0a0a;
             --text: #e4e4e4;
-            --transition: 0.3s ease;
+            --gold: #ffd700;
             --grid: rgba(255,215,0,0.1);
         }
 
         [data-theme="light"] {
-            --primary: var(--primary-light);
-            --background: #f5f5f5;
+            --bg: #f5f5f5;
             --text: #333;
+            --gold: #c5a642;
             --grid: rgba(197,166,66,0.1);
         }
 
@@ -33,23 +28,20 @@
         body {
             font-family: 'Helvetica Neue', sans-serif;
             overflow: hidden;
-            background: var(--background);
+            background: var(--bg);
             color: var(--text);
-            transition: background var(--transition);
+            transition: background 0.5s;
         }
 
         canvas {
             position: fixed;
             top: 0;
             left: 0;
+            z-index: -1;
         }
 
         #digitalRain {
             z-index: -2;
-        }
-
-        #particles {
-            z-index: -1;
         }
 
         .container {
@@ -65,37 +57,31 @@
             width: 100%;
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
 
         .theme-toggle {
             cursor: pointer;
-            padding: 0.5rem 1.2rem;
-            background: var(--primary);
-            color: var(--background);
+            padding: 0.5rem 1rem;
+            background: var(--gold);
+            color: var(--bg);
             border: none;
-            border-radius: 25px;
-            font-weight: 700;
-            transition: transform var(--transition);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            aria-label: "切换主题模式";
+            border-radius: 20px;
+            font-weight: bold;
+            transition: transform 0.3s;
         }
 
         .theme-toggle:hover {
-            transform: scale(1.08);
+            transform: scale(1.05);
         }
 
         .logo {
             width: 200px;
-            max-width: 100%;
-            height: auto;
-            filter: drop-shadow(0 0 5px var(--primary));
+            filter: drop-shadow(0 0 5px var(--gold));
         }
 
         .company-name {
             margin-top: 15vh;
-            width: min(400px, 90%);
-            height: auto;
+            width: 400px;
             opacity: 0.9;
         }
 
@@ -110,10 +96,9 @@
             height: 150px;
             border-radius: 50%;
             margin: 1rem auto;
-            border: 2px solid var(--primary);
+            border: 2px solid var(--gold);
             filter: grayscale(100%);
-            transition: var(--transition);
-            object-fit: cover;
+            transition: 0.3s;
         }
 
         .ceo-photo:hover {
@@ -124,10 +109,9 @@
         .email {
             font-size: 1.1rem;
             letter-spacing: 2px;
-            color: var(--primary);
+            color: var(--gold);
             text-decoration: none;
             position: relative;
-            display: inline-block;
         }
 
         .email:after {
@@ -137,33 +121,12 @@
             height: 1px;
             bottom: -2px;
             left: 0;
-            background: var(--primary);
-            transition: width var(--transition);
+            background: var(--gold);
+            transition: 0.3s;
         }
 
         .email:hover:after {
             width: 100%;
-        }
-
-        @media (max-width: 768px) {
-            .company-name {
-                margin-top: 10vh;
-            }
-            .ceo-photo {
-                width: 120px;
-                height: 120px;
-            }
-        }
-
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            border: 0;
         }
     </style>
 </head>
@@ -173,65 +136,36 @@
     
     <div class="container">
         <header>
-            <img src="logo.png" alt="公司Logo" class="logo">
-            <button class="theme-toggle" aria-label="切换主题模式" aria-pressed="false">深色模式</button>
+            <img src="logo.png" alt="Logo" class="logo">
+            <button class="theme-toggle" onclick="toggleTheme()">深色模式</button>
         </header>
 
-        <main>
-            <h1 class="sr-only">Gold Grid Capital</h1>
-            <img src="company-name.png" alt="Gold Grid Capital" class="company-name">
-        </main>
+        <img src="company-name.png" alt="Gold Grid Capital" class="company-name">
 
         <footer>
-            <img src="ceo.png" alt="CEO照片" class="ceo-photo">
+            <img src="ceo.png" alt="CEO" class="ceo-photo">
             <a href="mailto:ceo@ggc.fund" class="email">ceo@ggc.fund</a>
         </footer>
     </div>
 
     <script>
-        class AnimationManager {
-            constructor() {
-                this.animations = [];
-                this.isAnimating = true;
-            }
+        // 动效核心系统
+        let isDark = true;
+        const mouse = { x: null, y: null };
 
-            add(animation) {
-                this.animations.push(animation);
-            }
-
-            toggle() {
-                this.isAnimating = !this.isAnimating;
-                if(this.isAnimating) this.start();
-                else this.stop();
-            }
-
-            start() {
-                this.animations.forEach(anim => anim.start());
-            }
-
-            stop() {
-                this.animations.forEach(anim => anim.stop());
-            }
-        }
-
+        // 数字雨特效
         class DigitalRain {
             constructor(canvas) {
                 this.canvas = canvas;
                 this.ctx = canvas.getContext('2d');
-                this.characters = 'GGCQUANT01';
+                this.characters = 'GOLDGRID01';
                 this.drops = [];
-                this.fontSize = 20;
-                this.speed = 0.5; // 速度降低50%
-                this.animationFrame = null;
+                this.fontSize = 22;
                 this.init();
+                this.animate();
             }
 
             init() {
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-            }
-
-            resize() {
                 this.canvas.width = window.innerWidth;
                 this.canvas.height = window.innerHeight;
                 this.columns = Math.floor(this.canvas.width / this.fontSize);
@@ -241,7 +175,7 @@
             animate() {
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                this.ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary');
+                this.ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gold');
                 this.ctx.font = `${this.fontSize}px monospace`;
 
                 for (let i = 0; i < this.drops.length; i++) {
@@ -254,50 +188,34 @@
                     if (y > this.canvas.height && Math.random() > 0.975) {
                         this.drops[i] = 0;
                     }
-                    this.drops[i] += this.speed;
+                    this.drops[i]++;
                 }
-                this.animationFrame = requestAnimationFrame(() => this.animate());
-            }
-
-            start() {
-                if (!this.animationFrame) this.animate();
-            }
-
-            stop() {
-                cancelAnimationFrame(this.animationFrame);
-                this.animationFrame = null;
+                requestAnimationFrame(() => this.animate());
             }
         }
 
+        // 黄金粒子系统
         class GoldenParticle {
             constructor(canvas, ctx) {
                 this.canvas = canvas;
                 this.ctx = ctx;
-                this.baseSize = Math.random() * 3 + 2;
                 this.reset(true);
-                this.addBrownianMotion();
+                this.alpha = Math.random() * 0.5 + 0.5;
             }
 
             reset(init) {
                 this.x = init ? Math.random() * this.canvas.width : -50;
                 this.y = Math.random() * this.canvas.height;
-                this.radius = this.baseSize;
+                this.radius = Math.random() * 5 + 3;
                 this.velocity = {
-                    x: (Math.random() - 0.5) * 0.4,
-                    y: (Math.random() - 0.5) * 0.4
+                    x: (Math.random() - 0.5) * 0.8,
+                    y: (Math.random() - 0.5) * 0.8
                 };
                 this.updateColor();
             }
 
-            addBrownianMotion() {
-                this.brownian = {
-                    x: (Math.random() - 0.5) * 0.3,
-                    y: (Math.random() - 0.5) * 0.3
-                };
-            }
-
             updateColor() {
-                this.color = `hsla(45, 85%, ${document.documentElement.dataset.theme === 'dark' ? '60%' : '45%'}, 0.8)`;
+                this.color = `hsla(45, 85%, ${isDark ? '60%' : '45%'}, ${this.alpha})`;
             }
 
             draw() {
@@ -316,102 +234,56 @@
                 this.ctx.fill();
             }
 
-            update(mouse) {
-                // 布朗运动
-                this.velocity.x += (Math.random() - 0.5) * 0.1;
-                this.velocity.y += (Math.random() - 0.5) * 0.1;
-
-                // 鼠标交互
+            update() {
                 if (mouse.x && mouse.y) {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
-                    const maxDist = 150;
 
-                    if (dist < maxDist) {
-                        const force = (maxDist - dist) / maxDist;
-                        this.velocity.x += (dx / dist) * force * 0.2;
-                        this.velocity.y += (dy / dist) * force * 0.2;
+                    if (dist < 100) {
+                        const force = (100 - dist) / 50;
+                        this.x += (dx / dist) * force;
+                        this.y += (dy / dist) * force;
                     }
                 }
 
-                // 速度限制
-                this.velocity.x = Math.max(-1, Math.min(1, this.velocity.x));
-                this.velocity.y = Math.max(-1, Math.min(1, this.velocity.y));
-
-                this.x += this.velocity.x;
-                this.y += this.velocity.y;
-
-                // 边界处理
                 if (this.x < -this.radius || this.x > this.canvas.width + this.radius ||
                     this.y < -this.radius || this.y > this.canvas.height + this.radius) {
                     this.reset(false);
                 }
+
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
             }
         }
 
-        class ParticleSystem {
-            constructor(canvas) {
-                this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.particles = [];
-                this.mouse = { x: null, y: null };
-                this.animationFrame = null;
-                this.init();
-            }
+        // 系统初始化
+        const digitalCanvas = document.getElementById('digitalRain');
+        const particleCanvas = document.getElementById('particles');
+        let particles = [];
 
-            init() {
-                this.resize();
-                window.addEventListener('resize', () => this.resize());
-                this.createParticles();
-            }
-
-            resize() {
-                this.canvas.width = window.innerWidth;
-                this.canvas.height = window.innerHeight;
-            }
-
-            createParticles() {
-                const density = Math.min(120, window.innerWidth * window.innerHeight / 2500);
-                this.particles = Array.from({ length: density }, 
-                    () => new GoldenParticle(this.canvas, this.ctx));
-            }
-
-            animate() {
-                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                this.particles.forEach(p => {
-                    p.update(this.mouse);
-                    p.draw();
-                });
-                this.animationFrame = requestAnimationFrame(() => this.animate());
-            }
-
-            start() {
-                if (!this.animationFrame) this.animate();
-            }
-
-            stop() {
-                cancelAnimationFrame(this.animationFrame);
-                this.animationFrame = null;
-            }
+        function initParticles() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            const ctx = particleCanvas.getContext('2d');
+            particles = Array.from({ length: 120 }, () => new GoldenParticle(particleCanvas, ctx));
         }
 
-        // 初始化系统
-        const animationManager = new AnimationManager();
-        const digitalRain = new DigitalRain(document.getElementById('digitalRain'));
-        const particleSystem = new ParticleSystem(document.getElementById('particles'));
+        function animateParticles() {
+            const ctx = particleCanvas.getContext('2d');
+            ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateParticles);
+        }
 
-        animationManager.add(digitalRain);
-        animationManager.add(particleSystem);
-        animationManager.start();
-
-        // 事件处理
-        const mouse = { x: null, y: null };
-        const handleMove = (e) => {
+        // 事件监听
+        function handleMove(e) {
             mouse.x = e.clientX || e.touches[0].clientX;
             mouse.y = e.clientY || e.touches[0].clientY;
-            particleSystem.mouse = mouse;
-        };
+        }
 
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('touchmove', (e) => {
@@ -419,22 +291,27 @@
             handleMove(e);
         }, { passive: false });
 
-        // 主题切换
-        function toggleTheme() {
-            const isDark = document.documentElement.dataset.theme === 'dark';
-            document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-            document.querySelector('.theme-toggle').textContent = isDark ? '浅色模式' : '深色模式';
-            particleSystem.particles.forEach(p => p.updateColor());
-        }
-
-        // 页面可见性控制
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) animationManager.stop();
-            else animationManager.start();
+        window.addEventListener('resize', () => {
+            digitalCanvas.width = window.innerWidth;
+            digitalCanvas.height = window.innerHeight;
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            new DigitalRain(digitalCanvas);
+            initParticles();
         });
 
-        // 初始化主题按钮
-        document.querySelector('.theme-toggle').addEventListener('click', toggleTheme);
+        // 主题切换
+        function toggleTheme() {
+            isDark = !isDark;
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            document.querySelector('.theme-toggle').textContent = isDark ? '深色模式' : '浅色模式';
+            particles.forEach(p => p.updateColor());
+        }
+
+        // 启动系统
+        new DigitalRain(digitalCanvas);
+        initParticles();
+        animateParticles();
     </script>
 </body>
 </html>
