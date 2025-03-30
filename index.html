@@ -136,7 +136,33 @@
             <a href="mailto:ceo@ggc.fund" class="email">ceo@ggc.fund</a>
         </footer>
     </div>
-
+// 替换原有init函数
+function init() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // 先清空再创建新粒子
+    particles = [];
+    particles = Array.from({ length: 150 }, () => new Particle(canvas, ctx));
+    
+    // 使用动态获取的网格颜色
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid');
+    ctx.lineWidth = 0.3;
+    
+    // 网格绘制逻辑优化
+    for(let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, 0);
+        ctx.lineTo(x + 0.5, canvas.height);
+        ctx.stroke();
+    }
+    for(let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y + 0.5);
+        ctx.lineTo(canvas.width, y + 0.5);
+        ctx.stroke();
+    }
+}
     <script>
         // 主题切换
         let isDark = true;
@@ -185,7 +211,11 @@
 
                 this.x += this.velocity.x;
                 this.y += this.velocity.y;
-
+window.addEventListener('touchmove', e => {
+    e.preventDefault();
+    mouse.x = e.touches[0].clientX;
+    mouse.y = e.touches[0].clientY;
+}, { passive: false });
                 // 边界处理
                 if(this.x < 0 || this.x > this.canvas.width) this.velocity.x *= -1;
                 if(this.y < 0 || this.y > this.canvas.height) this.velocity.y *= -1;
@@ -199,13 +229,13 @@
         const mouse = { x: null, y: null };
 
         function init() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
             
             particles = Array.from({ length: 150 }, () => new Particle(canvas, ctx));
             
             // 绘制背景网格
-            ctx.strokeStyle = var(--grid);
+            ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid');
             for(let x = 0; x < canvas.width; x += 50) {
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
