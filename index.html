@@ -104,14 +104,17 @@
             border-radius: 50%;
             margin: 1rem auto;
             border: 2px solid var(--gold);
-            filter: grayscale(100%);
-            transition: 0.3s;
+            /* 修改点1：移除默认黑白滤镜 */
+            transition: filter 0.3s, transform 0.3s; /* 添加filter过渡效果 */
         }
 
         .ceo-photo:hover {
-            filter: grayscale(0);
+            /* 修改点2：改为赛博风格滤镜 */
+            filter: hue-rotate(180deg) contrast(150%) saturate(200%);
             transform: scale(1.05);
         }
+
+           
 
         .email {
             font-size: 1.1rem;
