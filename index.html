@@ -104,14 +104,78 @@
             border-radius: 50%;
             margin: 1rem auto;
             border: 2px solid var(--gold);
-            /* 修改点1：移除默认黑白滤镜 */
-            transition: filter 0.3s, transform 0.3s; /* 添加filter过渡效果 */
+            cursor: pointer;
+            position: relative; /* 新增：为伪元素定位 */
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                        box-shadow 0.4s ease; /* 修改：优化过渡曲线 */
+            overflow: hidden; /* 新增：隐藏溢出效果 */
+        }
+
+        /* 新增：光环动画效果 */
+        .ceo-photo::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent 25%,
+                var(--gold) 50%,
+                transparent 75%);
+            opacity: 0;
+            transform: rotate(45deg);
+            transition: opacity 0.4s;
+            z-index: 1;
+        }
+
+        /* 新增：动态边框 */
+        .ceo-photo::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: linear-gradient(45deg, 
+                var(--gold),
+                #ff4500,
+                var(--gold)) border-box;
+            -webkit-mask: 
+                linear-gradient(#fff 0 0) content-box, 
+                linear-gradient(#fff 0 0);
+            mask: 
+                linear-gradient(#fff 0 0) content-box, 
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: rotate 3s linear infinite;
+            opacity: 0;
+            transition: opacity 0.4s;
         }
 
         .ceo-photo:hover {
-            /* 修改点2：改为赛博风格滤镜 */
-            filter: hue-rotate(180deg) contrast(120%) saturate(100%);
-            transform: scale(1.05);
+            transform: scale(1.08) perspective(1000px) rotateX(5deg) rotateY(5deg); /* 3D旋转效果 */
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); /* 光晕效果 */
+            filter: contrast(110%) saturate(150%); /* 增强色彩 */
+        }
+
+        .ceo-photo:hover::before {
+            opacity: 0.3;
+            animation: shine 1.5s linear infinite; /* 新增：扫光动画 */
+        }
+
+        .ceo-photo:hover::after {
+            opacity: 1;
+        }
+
+        /* 新增关键帧动画 */
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes shine {
+            0% { transform: translateY(-50%) rotate(45deg); }
+            100% { transform: translateY(150%) rotate(45deg); }
         }
 
            
