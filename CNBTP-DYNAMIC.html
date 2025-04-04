@@ -133,7 +133,40 @@
         if ('wakeLock' in navigator) {
             requestWakeLock();
         }
+        
+初始化音频
+        let audioInitialized = false;
+        const initAudio = async () => {
+            const buySound = document.getElementById('buy-sound');
+            const closeSound = document.getElementById('close-sound');
 
+            // 加载音频
+            buySound.load();
+            closeSound.load();
+
+            // 添加错误处理
+            buySound.addEventListener('error', () => {
+                console.error('买入音频加载失败');
+            });
+            closeSound.addEventListener('error', () => {
+                console.error('平仓音频加载失败');
+            });
+
+            // 尝试播放一次音频以解锁自动播放
+            try {
+                await buySound.play();
+                buySound.pause();
+                await closeSound.play();
+                closeSound.pause();
+                audioInitialized = true;
+            } catch (error) {
+                console.error('音频初始化播放失败:', error);
+            }
+
+            document.removeEventListener('click', initAudio);
+        };
+        document.addEventListener('click', initAudio);
+        
         // ========== 伦敦金XAU系统 ==========
         const updateXAU = async () => {
             const errorElement = document.getElementById('xauError');
