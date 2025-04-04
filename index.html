@@ -41,7 +41,7 @@
 
         #digitalRain {
             z-index: -2;
-            image-rendering: crisp-edges; /* 增强数字雨清晰度 */
+            image-rendering: crisp-edges;
         }
 
         #particles {
@@ -86,7 +86,7 @@
 
         .company-name {
             margin-top: 15vh;
-            max-width: min(400px, 90vw); /* 动态限制最大宽度 */
+            max-width: min(400px, 90vw);
             width: 100%;
             opacity: 0.9;
             padding: 0 20px;
@@ -96,22 +96,22 @@
             position: fixed;
             bottom: 3rem;
             text-align: center;
+            position: relative;
         }
 
         .ceo-photo {
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            margin: 1rem auto;
+            margin: 1rem auto 70px;
             border: 2px solid var(--gold);
             cursor: pointer;
-            position: relative; /* 新增：为伪元素定位 */
+            position: relative;
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                        box-shadow 0.4s ease; /* 修改：优化过渡曲线 */
-            overflow: hidden; /* 新增：隐藏溢出效果 */
+                        box-shadow 0.4s ease;
+            overflow: hidden;
         }
 
-        /* 新增：光环动画效果 */
         .ceo-photo::before {
             content: '';
             position: absolute;
@@ -129,7 +129,6 @@
             z-index: 1;
         }
 
-        /* 新增：动态边框 */
         .ceo-photo::after {
             content: '';
             position: absolute;
@@ -154,21 +153,38 @@
         }
 
         .ceo-photo:hover {
-            transform: scale(1.08) perspective(1000px) rotateX(5deg) rotateY(5deg); /* 3D旋转效果 */
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); /* 光晕效果 */
-            filter: contrast(110%) saturate(150%); /* 增强色彩 */
+            transform: scale(1.08) perspective(1000px) rotateX(5deg) rotateY(5deg);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+            filter: contrast(110%) saturate(150%);
         }
 
         .ceo-photo:hover::before {
             opacity: 0.3;
-            animation: shine 1.5s linear infinite; /* 新增：扫光动画 */
+            animation: shine 1.5s linear infinite;
         }
 
         .ceo-photo:hover::after {
             opacity: 1;
         }
 
-        /* 新增关键帧动画 */
+        .quant-button {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 80px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+            bottom: -60px;
+        }
+
+        .quant-button:hover {
+            opacity: 0.8;
+        }
+
         @keyframes rotate {
             100% { transform: rotate(360deg); }
         }
@@ -177,8 +193,6 @@
             0% { transform: translateY(-50%) rotate(45deg); }
             100% { transform: translateY(150%) rotate(45deg); }
         }
-
-           
 
         .email {
             font-size: 1.1rem;
@@ -218,19 +232,19 @@
 
         <footer>
             <img src="ceo.png" alt="CEO" class="ceo-photo">
+            <a href="/CNBTP-DYNAMIC.html" class="quant-button" title="进入量化交易系统"></a>
             <a href="mailto:ceo@ggc.fund" class="email">ceo@ggc.fund</a>
         </footer>
     </div>
 
     <script>
-        // 增强版数字雨系统
         class DigitalRain {
             constructor(canvas) {
                 this.canvas = canvas;
-                this.ctx = canvas.getContext('2d', { alpha: false }); // 禁用透明度
+                this.ctx = canvas.getContext('2d', { alpha: false });
                 this.characters = 'GOLDGRIDCAPITAL01';
                 this.drops = [];
-                this.fontSize = 24; // 增大字号
+                this.fontSize = 24;
                 this.init();
                 this.animate();
             }
@@ -240,14 +254,14 @@
                 this.canvas.height = window.innerHeight;
                 this.columns = Math.floor(this.canvas.width / this.fontSize);
                 this.drops = Array(this.columns).fill(1);
-                this.ctx.textBaseline = 'top'; // 优化文字对齐
+                this.ctx.textBaseline = 'top';
             }
 
             animate() {
                 this.ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 this.ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gold');
-                this.ctx.font = `bold ${this.fontSize}px monospace`; // 加粗字体
+                this.ctx.font = `bold ${this.fontSize}px monospace`;
 
                 for (let i = 0; i < this.drops.length; i++) {
                     const char = this.characters[Math.floor(Math.random() * this.characters.length)];
@@ -259,13 +273,12 @@
                     if (y > this.canvas.height && Math.random() > 0.975) {
                         this.drops[i] = 0;
                     }
-                    this.drops[i]++; // 保持半速
+                    this.drops[i]++;
                 }
                 requestAnimationFrame(() => this.animate());
             }
         }
 
-        // 增强版粒子系统
         class GoldenParticle {
             constructor(canvas, ctx) {
                 this.canvas = canvas;
@@ -288,7 +301,7 @@
             }
 
             updateColor() {
-                this.color = `hsla(45, 85%, ${isDark ? '45%' : '35%'}, ${this.baseAlpha})`; // 调整颜色亮度
+                this.color = `hsla(45, 85%, ${isDark ? '45%' : '35%'}, ${this.baseAlpha})`;
             }
 
             draw() {
@@ -303,18 +316,16 @@
                 this.ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 this.ctx.fillStyle = grad;
                 this.ctx.shadowColor = this.color;
-                this.ctx.shadowBlur = 25; // 增强光晕效果
+                this.ctx.shadowBlur = 25;
                 this.ctx.fill();
             }
 
             update() {
-                // 布朗运动增强
                 this.velocity.x += (Math.random() - 0.5) * 0.1;
                 this.velocity.y += (Math.random() - 0.5) * 0.1;
                 this.velocity.x = Math.max(-0.8, Math.min(0.8, this.velocity.x));
                 this.velocity.y = Math.max(-0.8, Math.min(0.8, this.velocity.y));
 
-                // 鼠标交互增强
                 if (mouse.x && mouse.y) {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
@@ -331,7 +342,6 @@
                     }
                 }
 
-                // 边界控制
                 if (this.x < -this.radius || this.x > this.canvas.width + this.radius ||
                     this.y < -this.radius || this.y > this.canvas.height + this.radius) {
                     this.reset(false);
@@ -342,7 +352,6 @@
             }
         }
 
-        // 系统初始化
         const digitalCanvas = document.getElementById('digitalRain');
         const particleCanvas = document.getElementById('particles');
         let particles = [];
@@ -353,7 +362,7 @@
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
             const ctx = particleCanvas.getContext('2d');
-            particles = Array.from({ length: 150 }, () => new GoldenParticle(particleCanvas, ctx)); // 增加粒子数量
+            particles = Array.from({ length: 150 }, () => new GoldenParticle(particleCanvas, ctx));
         }
 
         function animateParticles() {
@@ -366,7 +375,6 @@
             requestAnimationFrame(animateParticles);
         }
 
-        // 事件监听
         function handleMove(e) {
             mouse.x = e.clientX || e.touches[0].clientX;
             mouse.y = e.clientY || e.touches[0].clientY;
@@ -387,7 +395,6 @@
             initParticles();
         });
 
-        // 主题切换
         function toggleTheme() {
             isDark = !isDark;
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -395,7 +402,6 @@
             particles.forEach(p => p.updateColor());
         }
 
-        // 启动系统
         new DigitalRain(digitalCanvas);
         initParticles();
         animateParticles();
