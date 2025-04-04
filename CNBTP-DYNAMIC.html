@@ -74,16 +74,15 @@
 
     <audio id="buy-sound">
 
-   <source src="/y1896.mp3" type="audio/mpeg">
+   <source src="/y1897.mp3" type="audio/mpeg">
 
    </audio>
 
    <audio id="close-sound">
 
-   <source src="/y1897.mp3" type="audio/mpeg">
+   <source src="/y1896.mp3" type="audio/mpeg">
 
    </audio>
-
 
     <script>
         // ========== 通用工具函数 ==========
@@ -223,36 +222,35 @@
 
             if (signal === 'buy_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-long_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#00C853] to-[#00E676] border-4 border-[#69F0AE]';
-                signalElement.textContent = '❌❌ 谨慎观察';
-                
-                
+                signalElement.textContent = '✅✅ 买多';
+                buySound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'buy_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-short_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#D50000] to-[#FF5252] border-4 border-[#FF8A80]';
-                signalElement.textContent = '❌❌ 谨慎观察';
-                
-            
+                signalElement.textContent = '❌❌ 买空';
+                buySound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'sell_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
-                signalElement.textContent = '✅✅ 买空';
-                buySound.play();
+                signalElement.textContent = '🔄✅平多';
+                closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else if (signal === 'sell_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
-                signalElement.textContent = '✅✅ 买多';
-                buySound.play();
+                signalElement.textContent = '🔄❌ 平空';
+                closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center';
-                signalElement.textContent = '🔄🔄 平仓';
-                closeSound.play();
-                if ('vibrate' in navigator) {
-                    navigator.vibrate([100, 100, 100]);
+                signalElement.textContent = '🔄🔄 谨慎观察';
             }
 
             lastSignal = signal;
