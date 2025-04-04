@@ -127,7 +127,7 @@
         // 开始标识
         const API_KEY = '8558d9dbea3c43e8bb0faa94542a9ad5018fc93a8da340fbb570be0a5daa8f5e';
         const ITICK_API_URL = 'https://api.itick.org/forex/kline?region=gb&code=XAUUSD&kType=1&limit=100';
-        const UPDATE_INTERVAL = 12000; // 数据更新间隔，单位为毫秒
+        const UPDATE_INTERVAL = 12000; // 数据更新间隔，单位为毫秒，可根据需要调整
         // 结束标识
 
         const fetchWithTimeout = async (url, timeout = UPDATE_INTERVAL) => {
@@ -152,15 +152,18 @@
         // ========== 信号计算变量 ==========
         let xauData = []; // 存储最新100根K线
         let lastSignal = null; // 记录最新信号
+        let openPrice = null; // 开仓价格（用于平仓判断）
 
         // ========== 伦敦金XAU系统 ==========
         const updateXAU = async () => {
             const errorElement = document.getElementById('xauError');
             try {
+                // 获取ITICK数据（假设返回包含EMA、MACD、RSI的结构）
                 const data = await fetchWithTimeout(ITICK_API_URL);
                 xauData = data.data.slice(-100); // 保留最新100根K线
                 errorElement.textContent = '';
                 
+                // 计算信号
                 const currentSignal = calculateSignal(xauData);
                 updateSignalDisplay(currentSignal);
                 
@@ -170,63 +173,51 @@
             }
         };
 
-        // ========== 信号计算函数 (原始5信号策略) ==========
+        // ========== 信号计算函数 ==========
         const calculateSignal = (data) => {
-            if (data.length < 4) return null; // 至少需要4根K线
+            if (data.length < 4) return null; // 至少需要4根K线计算指标
             const current = data[data.length - 1];
             const prev3 = data.slice(-4, -1); // 前3根K线（不包含当前）
-            const prev1 = data[data.length - 2] || {}; // 前1根K线
-            
-            // 计算前3根成交量/成交额均值
-            const vMeanPrev3 = prev3.reduce((sum, k) => sum + k.v, 0) / 3;
-            const tuMeanPrev3 = prev3.reduce((sum, k) => sum + k.tu, 0) / 3;
-            
-            // 计算前5根成交量均值（用于谨慎观察）
-            const prev5 = data.slice(-6, -1);
-            const vMeanPrev5 = prev5.length > 0 ? prev5.reduce((sum, k) => sum + k.v, 0) / 5 : 0;
-            const hMaxPrev5 = Math.max(...prev5.map(k => k.h));
-            const lMinPrev5 = Math.min(...prev5.map(k => k.l));
-            
-            let signal = 'wait'; // 默认谨慎观察
+            const prev5Vol = data.slice(-6, -1).map(k => k.v); // 前5根成交量（不包含当前）
+            const vMeanPrev3 = prev3.reduce((sum, kLine) => sum + kLine.v, 0) / 3;
+            const tuMeanPrev3 = prev3.reduce((sum, kLine) => sum + kLine.tu, 0) / 3;
+
+            const prev5KLines = data.slice(-6, -1);
+            const vMeanPrev5 = prev5KLines.reduce((sum, kLine) => sum + kLine.v, 0) / 5;
+            const hMaxPrev5 = Math.max(...prev5KLines.map(kLine => kLine.h));
+            const lMinPrev5 = Math.min(...prev5KLines.map(kLine => kLine.l));
+
+            const hMaxPrev3 = Math.max(...prev3.map(kLine => kLine.h));
+            const lMinPrev3 = Math.min(...prev3.map(kLine => kLine.l));
+
+            let signal = null;
 
             // 买入多单信号
-            if (current.c > current.o &&               // 阳线
-                current.c >= current.h * 0.995 &&      // 实体占比≥95%
-                current.v >= vMeanPrev3 * 1.5 &&       // 成交量放大1.5倍
-                current.tu >= tuMeanPrev3 * 1.5 &&     // 成交额同步放大
-                current.h > Math.max(...prev3.map(k => k.h)) // 突破前3根最高价
-            ) {
+            if (current.c > current.o && current.c >= current.h * 0.995 &&
+                current.v >= vMeanPrev3 * 1.5 && current.tu >= tuMeanPrev3 * 1.5 &&
+                current.h > hMaxPrev3) {
                 signal = 'buy_long';
             }
             // 买入空单信号
-            else if (current.c < current.o &&              // 阴线
-                     current.c <= current.l * 1.005 &&     // 实体占比≥95%
-                     current.v >= vMeanPrev3 * 1.5 &&       // 成交量放大1.5倍
-                     current.tu >= tuMeanPrev3 * 1.5 &&     // 成交额同步放大
-                     current.l < Math.min(...prev3.map(k => k.l)) // 跌破前3根最低价
-            ) {
+            else if (current.c < current.o && current.c <= current.l * 1.005 &&
+                current.v >= vMeanPrev3 * 1.5 && current.tu >= tuMeanPrev3 * 1.5 &&
+                current.l < lMinPrev3) {
                 signal = 'buy_short';
             }
-            // 平仓多单信号（满足任一条件）
-            else if (
-                (current.c < current.o && current.c < prev1.l) || // 阴线跌破前1根最低价
-                (current.h <= prev1.h && current.c < current.o && current.v <= prev1.v * 0.7) // 缩量回落
-            ) {
+            // 平仓多单信号
+            else if ((current.c < current.o && current.c < prev3[prev3.length - 1].l) ||
+                (current.h <= prev3[prev3.length - 1].h && current.c < current.o && current.v <= prev3[prev3.length - 1].v * 0.7)) {
                 signal = 'sell_long';
             }
-            // 平仓空单信号（满足任一条件）
-            else if (
-                (current.c > current.o && current.c > prev1.h) || // 阳线突破前1根最高价
-                (current.l >= prev1.l && current.c > current.o && current.v <= prev1.v * 0.7) // 缩量反弹
-            ) {
+            // 平仓空单信号
+            else if ((current.c > current.o && current.c > prev3[prev3.length - 1].h) ||
+                (current.l >= prev3[prev3.length - 1].l && current.c > current.o && current.v <= prev3[prev3.length - 1].v * 0.7)) {
                 signal = 'sell_short';
             }
-            // 谨慎观察信号（满足任意2项）
-            else if ([
-                Math.abs(current.c - current.o) <= (current.h - current.l) * 0.2, // 小实体
-                current.v <= vMeanPrev5 * 0.5, // 成交量低迷
-                (current.h - current.l) <= (hMaxPrev5 - lMinPrev5) * 0.1 // 窄幅震荡
-            ].filter(cond => cond).length >= 2) {
+            // 谨慎观察信号
+            else if ((Math.abs(current.c - current.o) <= (current.h - current.l) * 0.2) +
+                (current.v <= vMeanPrev5 * 0.5) +
+                ((current.h - current.l) <= (hMaxPrev5 - lMinPrev5) * 0.1) >= 2) {
                 signal = 'wait';
             }
 
@@ -238,47 +229,49 @@
             const signalElement = document.getElementById('xauSignal');
             const priceElement = document.getElementById('xauPrice');
             const timeElement = document.getElementById('xauTime');
+
             const buySound = document.getElementById('buy-sound');
             const closeSound = document.getElementById('close-sound');
-
+            
             if (xauData.length === 0) return;
             const current = xauData[xauData.length - 1];
             
-            // 显示当前价格和时间
             priceElement.textContent = current.c.toFixed(2);
             timeElement.textContent = new Date(current.t).toLocaleTimeString();
-
-            // 信号样式和提醒
-            switch(signal) {
-                case 'buy_long':
-                    signalElement.className = 'signal-text buy-long';
-                    signalElement.textContent = '✅ 买多';
-                    buySound.play();
-                    navigator.vibrate && navigator.vibrate([100, 100, 100]); // 连续短震动
-                    break;
-                case 'buy_short':
-                    signalElement.className = 'signal-text buy-short';
-                    signalElement.textContent = '❌ 买空';
-                    buySound.play();
-                    navigator.vibrate && navigator.vibrate([100, 100, 100]); // 连续短震动
-                    break;
-                case 'sell_long':
-                    signalElement.className = 'signal-text sell-long';
-                    signalElement.textContent = '🔄 平多';
-                    closeSound.play();
-                    navigator.vibrate && navigator.vibrate(300); // 单一中等震动
-                    break;
-                case 'sell_short':
-                    signalElement.className = 'signal-text sell-short';
-                    signalElement.textContent = '🔄 平空';
-                    closeSound.play();
-                    navigator.vibrate && navigator.vibrate(300); // 单一中等震动
-                    break;
-                default:
-                    signalElement.className = 'signal-text';
-                    signalElement.textContent = '🔄 谨慎观察';
+            
+            if (signal === 'buy_long') {
+                signalElement.className = 'signal-text buy-long';
+                signalElement.textContent = '✅ 买多';
+                buySound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 100, 100]);
+                }
+            } else if (signal === 'buy_short') {
+                signalElement.className = 'signal-text buy-short';
+                signalElement.textContent = '❌ 买空';
+                buySound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 100, 100]);
+                }
+            } else if (signal === 'sell_long') {
+                signalElement.className = 'signal-text sell-long';
+                signalElement.textContent = '🔄 平多';
+                closeSound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(300);
+                }
+            } else if (signal === 'sell_short') {
+                signalElement.className = 'signal-text sell-short';
+                signalElement.textContent = '🔄 平空';
+                closeSound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(300);
+                }
+            } else {
+                signalElement.className = 'signal-text';
+                signalElement.textContent = '🔄 谨慎观察';
             }
-
+            
             lastSignal = signal;
         };
 
@@ -286,7 +279,7 @@
         const systemLoop = async () => {
             while (true) {
                 await updateXAU();
-                await delay(UPDATE_INTERVAL);
+                await delay(UPDATE_INTERVAL); // 每 UPDATE_INTERVAL 毫秒更新一次
             }
         };
 
@@ -295,3 +288,4 @@
     </script>
 </body>
 </html>
+    
