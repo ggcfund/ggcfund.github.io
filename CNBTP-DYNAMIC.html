@@ -224,14 +224,14 @@
 
             if (signal === 'buy_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-long_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#00C853] to-[#00E676] border-4 border-[#69F0AE]';
-                signalElement.textContent = '✅ 买多';
+                signalElement.textContent = '✅✅ 买多';
                 if (audioInitialized) buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'buy_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-short_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#D50000] to-[#FF5252] border-4 border-[#FF8A80]';
-                signalElement.textContent = '❌ 买空';
+                signalElement.textContent = '❌❌买空';
                 if (audioInitialized) buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
