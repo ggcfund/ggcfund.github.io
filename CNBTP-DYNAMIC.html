@@ -116,165 +116,176 @@
         <div id="xauError" class="error-message"></div>
     </div>
 
-<script>
-// ========== 通用工具函数 ==========
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    <audio id="buy-sound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+    <audio id="close-sound" src="https://www.soundjay.com/button/beep-08.wav"></audio>
 
-// 以下是与 itick 有关的变量，可根据实际情况修改
-// 开始标识
-const API_KEY = '8558d9dbea3c43e8bb0faa94542a9ad5018fc93a8da340fbb570be0a5daa8f5e';
-const ITICK_API_URL = 'https://api.itick.com/1min_kline?symbol=XAUUSD'; // 请根据 itick 实际 API 地址修改
-const UPDATE_INTERVAL = 12000; // 数据更新间隔，单位为毫秒，可根据需要调整
-// 结束标识
+    <script>
+        // ========== 通用工具函数 ==========
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const fetchWithTimeout = async (url, timeout = UPDATE_INTERVAL) => {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        const response = await fetch(url, { 
-            signal: controller.signal,
-            headers: { 'X-API-KEY': API_KEY }
-        });
-        clearTimeout(timeoutId);
-        return response.json();
-    } catch (error) {
-        if (error.name === 'AbortError') throw new Error('请求超时');
-        throw error;
-    }
-};
+        // 以下是与 itick 有关的变量，可根据实际情况修改
+        // 开始标识
+        const API_KEY = '8558d9dbea3c43e8bb0faa94542a9ad5018fc93a8da340fbb570be0a5daa8f5e';
+        const ITICK_API_URL = 'https://api.itick.org/forex/kline?region=gb&code=XAUUSD&kType=1&limit=100';
+        const UPDATE_INTERVAL = 12000; // 数据更新间隔，单位为毫秒，可根据需要调整
+        // 结束标识
 
-// ========== 信号计算变量 ==========
-let xauData = []; // 存储最新100根K线
-let lastSignal = null; // 记录最新信号
-let openPrice = null; // 开仓价格（用于平仓判断）
+        const fetchWithTimeout = async (url, timeout = UPDATE_INTERVAL) => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                const response = await fetch(url, { 
+                    signal: controller.signal,
+                    headers: { 
+                        accept: 'application/json',
+                        token: API_KEY 
+                    }
+                });
+                clearTimeout(timeoutId);
+                return response.json();
+            } catch (error) {
+                if (error.name === 'AbortError') throw new Error('请求超时');
+                throw error;
+            }
+        };
 
-// ========== 伦敦金XAU系统 ==========
-const updateXAU = async () => {
-    const errorElement = document.getElementById('xauError');
-    try {
-        // 获取ITICK数据（假设返回包含EMA、MACD、RSI的结构）
-        const data = await fetchWithTimeout(ITICK_API_URL);
-        xauData = data.slice(-100); // 保留最新100根K线
-        errorElement.textContent = '';
-        
-        // 计算信号
-        const currentSignal = calculateSignal(xauData);
-        updateSignalDisplay(currentSignal);
-        
-    } catch (error) {
-        errorElement.textContent = `数据获取异常: ${error.message}`;
-        updateSignalDisplay(null);
-    }
-};
+        // ========== 信号计算变量 ==========
+        let xauData = []; // 存储最新100根K线
+        let lastSignal = null; // 记录最新信号
+        let openPrice = null; // 开仓价格（用于平仓判断）
 
-// ========== 信号计算函数 ==========
-const calculateSignal = (data) => {
-    if (data.length < 10) return null; // 至少需要10根K线计算指标
-    const current = data[data.length - 1];
-    const prev3 = data.slice(-4, -1); // 前3根K线（不包含当前）
-    const prev5Vol = data.slice(-6, -1).map(k => k.volume); // 前5根成交量（不包含当前）
-    
-    // 趋势确认（买多条件）
-    const buyTrend = 
-        current.ema5 > current.ema20 &&        // 5EMA在20EMA上方
-        data[data.length - 2].ema5 > data[data.length - 2].ema20 && // 前一根也在上方（确保持续）
-        current.close > current.ema5;         // 价格位于通道上轨（5EMA上方）
-    
-    // 量价突破（买多条件）
-    const buyVolume = 
-        prev5Vol.length >= 5 &&
-        current.volume > (prev5Vol.reduce((a,b)=>a+b,0)/5) * 2 && // 成交量大于前5均值2倍
-        current.close > Math.max(...prev3.map(k => k.high));       // 突破前3根最高价
-    
-    // MACD强化（买多条件）
-    const macdHist = data.slice(-3).map(k => k.macd_hist); // 最近3根MACD柱状线
-    const buyMACD = 
-        macdHist[0] > macdHist[1] && macdHist[1] > macdHist[2] && // 连续放大
-        current.macd_line > 0 &&                                   // 快线在零轴上方
-        current.rsi < 65;                                          // RSI小于65
-    
-    // 趋势确认（买空条件）
-    const sellTrend = 
-        current.ema5 < current.ema20 &&        // 5EMA在20EMA下方
-        data[data.length - 2].ema5 < data[data.length - 2].ema20 && // 前一根也在下方
-        current.close < current.ema5;         // 价格位于通道下轨（5EMA下方）
-    
-    // 量价突破（买空条件）
-    const sellVolume = 
-        prev5Vol.length >= 5 &&
-        current.volume > (prev5Vol.reduce((a,b)=>a+b,0)/5) * 1.8 && // 成交量大于前5均值1.8倍
-        current.close < Math.min(...prev3.map(k => k.low));        // 跌破前3根最低价
-    
-    // MACD强化（买空条件）
-    const sellMACD = 
-        macdHist[0] < macdHist[1] && macdHist[1] < macdHist[2] && // 连续缩量（绝对值放大，假设负值代表下跌动能）
-        current.macd_line < 0 &&                                   // 快线在零轴下方
-        current.rsi > 35;                                          // RSI大于35
-    
-    // 平仓条件
-    const closeLong = openPrice && current.close - openPrice >= 1.0; // 上涨超过1美元平多
-    const closeShort = openPrice && openPrice - current.close >= 1.0; // 下跌超过1美元平空
-    
-    // 生成信号
-    if (buyTrend && buyVolume && buyMACD) {
-        openPrice = current.close; // 记录开仓价格
-        return 'buy_long';
-    } else if (sellTrend && sellVolume && sellMACD) {
-        openPrice = current.close;
-        return 'buy_short';
-    } else if (closeLong) {
-        return 'sell_long';
-    } else if (closeShort) {
-        return 'sell_short';
-    } else {
-        return null; // 无信号
-    }
-};
+        // ========== 伦敦金XAU系统 ==========
+        const updateXAU = async () => {
+            const errorElement = document.getElementById('xauError');
+            try {
+                // 获取ITICK数据（假设返回包含EMA、MACD、RSI的结构）
+                const data = await fetchWithTimeout(ITICK_API_URL);
+                xauData = data.data.slice(-100); // 保留最新100根K线
+                errorElement.textContent = '';
+                
+                // 计算信号
+                const currentSignal = calculateSignal(xauData);
+                updateSignalDisplay(currentSignal);
+                
+            } catch (error) {
+                errorElement.textContent = `数据获取异常: ${error.message}`;
+                updateSignalDisplay(null);
+            }
+        };
 
-// ========== 信号显示更新 ==========
-const updateSignalDisplay = (signal) => {
-    const signalElement = document.getElementById('xauSignal');
-    const priceElement = document.getElementById('xauPrice');
-    const timeElement = document.getElementById('xauTime');
-    
-    if (xauData.length === 0) return;
-    const current = xauData[xauData.length - 1];
-    
-    priceElement.textContent = current.close.toFixed(2);
-    timeElement.textContent = new Date(current.timestamp).toLocaleTimeString();
-    
-    if (signal === 'buy_long') {
-        signalElement.className = 'signal-text buy-long';
-        signalElement.textContent = '✅ 买多';
-    } else if (signal === 'buy_short') {
-        signalElement.className = 'signal-text buy-short';
-        signalElement.textContent = '❌ 买空';
-    } else if (signal === 'sell_long') {
-        signalElement.className = 'signal-text sell-long';
-        signalElement.textContent = '🔄 平多';
-    } else if (signal === 'sell_short') {
-        signalElement.className = 'signal-text sell-short';
-        signalElement.textContent = '🔄 平空';
-    } else {
-        signalElement.className = 'signal-text';
-        signalElement.textContent = '🔄 等待信号';
-    }
-    
-    lastSignal = signal;
-};
+        // ========== 信号计算函数 ==========
+        const calculateSignal = (data) => {
+            if (data.length < 4) return null; // 至少需要4根K线计算指标
+            const current = data[data.length - 1];
+            const prev3 = data.slice(-4, -1); // 前3根K线（不包含当前）
+            const prev5Vol = data.slice(-6, -1).map(k => k.v); // 前5根成交量（不包含当前）
+            const vMeanPrev3 = prev3.reduce((sum, kLine) => sum + kLine.v, 0) / 3;
+            const tuMeanPrev3 = prev3.reduce((sum, kLine) => sum + kLine.tu, 0) / 3;
 
-// ========== 系统控制 ==========
-const systemLoop = async () => {
-    while (true) {
-        await updateXAU();
-        await delay(UPDATE_INTERVAL); // 每 UPDATE_INTERVAL 毫秒更新一次
-    }
-};
+            const prev5KLines = data.slice(-6, -1);
+            const vMeanPrev5 = prev5KLines.reduce((sum, kLine) => sum + kLine.v, 0) / 5;
+            const hMaxPrev5 = Math.max(...prev5KLines.map(kLine => kLine.h));
+            const lMinPrev5 = Math.min(...prev5KLines.map(kLine => kLine.l));
 
-// 启动系统
-systemLoop();
-</script>
+            const hMaxPrev3 = Math.max(...prev3.map(kLine => kLine.h));
+            const lMinPrev3 = Math.min(...prev3.map(kLine => kLine.l));
 
+            let signal = null;
+
+            // 买入多单信号
+            if (current.c > current.o && current.c >= current.h * 0.995 &&
+                current.v >= vMeanPrev3 * 1.5 && current.tu >= tuMeanPrev3 * 1.5 &&
+                current.h > hMaxPrev3) {
+                signal = 'buy_long';
+            }
+            // 买入空单信号
+            else if (current.c < current.o && current.c <= current.l * 1.005 &&
+                current.v >= vMeanPrev3 * 1.5 && current.tu >= tuMeanPrev3 * 1.5 &&
+                current.l < lMinPrev3) {
+                signal = 'buy_short';
+            }
+            // 平仓多单信号
+            else if ((current.c < current.o && current.c < prev3[prev3.length - 1].l) ||
+                (current.h <= prev3[prev3.length - 1].h && current.c < current.o && current.v <= prev3[prev3.length - 1].v * 0.7)) {
+                signal = 'sell_long';
+            }
+            // 平仓空单信号
+            else if ((current.c > current.o && current.c > prev3[prev3.length - 1].h) ||
+                (current.l >= prev3[prev3.length - 1].l && current.c > current.o && current.v <= prev3[prev3.length - 1].v * 0.7)) {
+                signal = 'sell_short';
+            }
+            // 谨慎观察信号
+            else if ((Math.abs(current.c - current.o) <= (current.h - current.l) * 0.2) +
+                (current.v <= vMeanPrev5 * 0.5) +
+                ((current.h - current.l) <= (hMaxPrev5 - lMinPrev5) * 0.1) >= 2) {
+                signal = 'wait';
+            }
+
+            return signal;
+        };
+
+        // ========== 信号显示更新 ==========
+        const updateSignalDisplay = (signal) => {
+            const signalElement = document.getElementById('xauSignal');
+            const priceElement = document.getElementById('xauPrice');
+            const timeElement = document.getElementById('xauTime');
+
+            const buySound = document.getElementById('buy-sound');
+            const closeSound = document.getElementById('close-sound');
+            
+            if (xauData.length === 0) return;
+            const current = xauData[xauData.length - 1];
+            
+            priceElement.textContent = current.c.toFixed(2);
+            timeElement.textContent = new Date(current.t).toLocaleTimeString();
+            
+            if (signal === 'buy_long') {
+                signalElement.className = 'signal-text buy-long';
+                signalElement.textContent = '✅ 买多';
+                buySound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 100, 100]);
+                }
+            } else if (signal === 'buy_short') {
+                signalElement.className = 'signal-text buy-short';
+                signalElement.textContent = '❌ 买空';
+                buySound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 100, 100]);
+                }
+            } else if (signal === 'sell_long') {
+                signalElement.className = 'signal-text sell-long';
+                signalElement.textContent = '✅🔄 平多';
+                closeSound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(300);
+                }
+            } else if (signal === 'sell_short') {
+                signalElement.className = 'signal-text sell-short';
+                signalElement.textContent = '❌🔄 平空';
+                closeSound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(300);
+                }
+            } else {
+                signalElement.className = 'signal-text';
+                signalElement.textContent = '🔄 谨慎观察';
+            }
+            
+            lastSignal = signal;
+        };
+
+        // ========== 系统控制 ==========
+        const systemLoop = async () => {
+            while (true) {
+                await updateXAU();
+                await delay(UPDATE_INTERVAL); // 每 UPDATE_INTERVAL 毫秒更新一次
+            }
+        };
+
+        // 启动系统
+        systemLoop();
+    </script>
 </body>
 </html>
     
