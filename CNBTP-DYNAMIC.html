@@ -15,17 +15,11 @@
             color: white;
             margin: 0;
             font-family: 'Arial', sans-serif;
-        }
-        .container {
             display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             min-height: 100vh;
-        }
-        .panel {
-            width: 50%;
-            padding: 20px;
-            box-sizing: border-box;
-            border-right: 3px solid #333;
-            position: relative;
         }
         .header {
             text-align: center;
@@ -35,11 +29,11 @@
             margin: 20px 0;
         }
         .status-alert {
+            color: #FF6B6B;
+            font-size: 0.9em;
             position: absolute;
             top: 10px;
             right: 10px;
-            color: #FF6B6B;
-            font-size: 0.9em;
         }
         .symbol {
             font-size: 1.5em;
@@ -51,7 +45,9 @@
             border-radius: 15px;
             padding: 25px;
             margin: 20px auto;
+            width: 80%;
             max-width: 600px;
+            box-sizing: border-box;
         }
         .signal-text {
             font-size: 3em;
@@ -98,30 +94,14 @@
 </head>
 <body>
     <div class="header">🔥 超牛BTP量化猎杀-动态主力版 🔥</div>
-    <div class="container">
-        <!-- 伦敦金XAU现货 -->
-        <div class="panel">
-            <div class="status-alert" id="xauStatus"></div>
-            <div class="symbol">伦敦金 XAU/USD</div>
-            <div class="signal-box">
-                <div class="price-info">现价: <span id="xauPrice">--</span></div>
-                <div id="xauSignal" class="signal-text">🔄 初始化中...</div>
-                <div class="update-time">更新: <span id="xauTime">--</span></div>
-                <div id="xauError" class="error-message"></div>
-            </div>
-        </div>
-
-        <!-- 上期所期货 -->
-        <div class="panel">
-            <div class="status-alert" id="futureStatus"></div>
-            <div class="symbol" id="futureSymbol">SHFE 黄金主力合约</div>
-            <div class="signal-box">
-                <div class="price-info">现价: <span id="futurePrice">--</span></div>
-                <div id="futureSignal" class="signal-text">🔄 初始化中...</div>
-                <div class="update-time">更新: <span id="futureTime">--</span></div>
-                <div id="futureError" class="error-message"></div>
-            </div>
-        </div>
+    <!-- 伦敦金XAU现货 -->
+    <div class="signal-box">
+        <div class="status-alert" id="xauStatus"></div>
+        <div class="symbol">伦敦金 XAU/USD</div>
+        <div class="price-info">现价: <span id="xauPrice">--</span></div>
+        <div id="xauSignal" class="signal-text">🔄 初始化中...</div>
+        <div class="update-time">更新: <span id="xauTime">--</span></div>
+        <div id="xauError" class="error-message"></div>
     </div>
 
 <script>
@@ -174,62 +154,11 @@ const updateXAU = async () => {
     }
 };
 
-// ========== 期货主力合约系统 ==========
-let currentMainContract = 'AU2506'; // 默认值
-let futureData = [];
-
-// 动态获取主力合约
-const getMainContract = async () => {
-    try {
-        // 从新浪财经获取主力合约
-        const res = await fetchWithTimeout(
-            'https://stock.finance.sina.com.cn/futures/view/all_volume.php?symbol=AU'
-        );
-        const text = await res.text();
-        const match = text.match(/<td>au(\d{4})<\/td>\s*<td>主力合约<\/td>/i);
-        return match ? `AU${match[1].substring(0,2)}${match[1].substring(2)}` : null;
-    } catch (error) {
-        console.error('获取主力合约失败:', error);
-        return null;
-    }
-};
-
-// 更新期货数据
-const updateFuture = async () => {
-    const errorElement = document.getElementById('futureError');
-    try {
-        // 获取最新主力合约
-        const mainContract = await getMainContract();
-        if (!mainContract) throw new Error('无法获取主力合约');
-        currentMainContract = mainContract;
-        document.getElementById('futureSymbol').textContent = `SHFE ${mainContract}`;
-
-        // 获取合约数据
-        const res = await fetchWithTimeout(
-            `https://stock.finance.sina.com.cn/futures/api/json.php/` +
-            `InnerFuturesService.getFewMinLine?symbol=${mainContract}&type=1min`
-        );
-        futureData = await res.json();
-        errorElement.textContent = '';
-    } catch (error) {
-        errorElement.textContent = `期货数据异常: ${error.message}`;
-        futureData = [];
-    }
-
-    // 更新显示
-    if (futureData.length > 0) {
-        const current = futureData[futureData.length - 1];
-        document.getElementById('futurePrice').textContent = current.close.toFixed(2);
-        document.getElementById('futureTime').textContent = new Date().toLocaleTimeString();
-        // 此处添加信号计算逻辑
-    }
-};
-
 // ========== 系统控制 ==========
 const systemLoop = async () => {
     while (true) {
         try {
-            await Promise.allSettled([updateXAU(), updateFuture()]);
+            await updateXAU();
             await delay(60000); // 每分钟更新
         } catch (error) {
             console.error('系统异常:', error);
@@ -244,3 +173,4 @@ systemLoop();
 
 </body>
 </html>
+    
