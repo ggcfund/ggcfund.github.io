@@ -222,35 +222,38 @@
 
             if (signal === 'buy_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-long_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#00C853] to-[#00E676] border-4 border-[#69F0AE]';
-                signalElement.textContent = '✅✅ 买多';
+                signalElement.textContent = '❌❌ 谨慎观察';
                 buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'buy_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-short_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#D50000] to-[#FF5252] border-4 border-[#FF8A80]';
-                signalElement.textContent = '❌❌ 买空';
+                signalElement.textContent = '❌❌ 谨慎观察';
                 buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'sell_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
-                signalElement.textContent = '🔄✅平多';
+                signalElement.textContent = '✅✅买空';
                 closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else if (signal === 'sell_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
-                signalElement.textContent = '🔄❌ 平空';
+                signalElement.textContent = '✅✅ 买多';
                 closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center';
-                signalElement.textContent = '🔄🔄 谨慎观察';
+                signalElement.textContent = '🔄🔄 平仓';
+                buySound.play();
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([100, 100, 100]);
             }
 
             lastSignal = signal;
