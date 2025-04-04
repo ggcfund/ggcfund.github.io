@@ -125,6 +125,18 @@
             requestWakeLock();
         }
 
+        // 初始化音频
+        let audioInitialized = false;
+        const initAudio = () => {
+            const buySound = document.getElementById('buy-sound');
+            const closeSound = document.getElementById('close-sound');
+            buySound.load();
+            closeSound.load();
+            audioInitialized = true;
+            document.removeEventListener('click', initAudio);
+        };
+        document.addEventListener('click', initAudio);
+
         // ========== 伦敦金XAU系统 ==========
         const updateXAU = async () => {
             const errorElement = document.getElementById('xauError');
@@ -213,28 +225,28 @@
             if (signal === 'buy_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-long_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#00C853] to-[#00E676] border-4 border-[#69F0AE]';
                 signalElement.textContent = '✅ 买多';
-                buySound.play();
+                if (audioInitialized) buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'buy_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-short_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#D50000] to-[#FF5252] border-4 border-[#FF8A80]';
                 signalElement.textContent = '❌ 买空';
-                buySound.play();
+                if (audioInitialized) buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'sell_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
                 signalElement.textContent = '🔄✅平多';
-                closeSound.play();
+                if (audioInitialized) closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else if (signal === 'sell_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
                 signalElement.textContent = '🔄❌ 平空';
-                closeSound.play();
+                if (audioInitialized) closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
