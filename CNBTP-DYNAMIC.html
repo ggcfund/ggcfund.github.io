@@ -73,9 +73,17 @@
         <div class="text-[#666] text-xs text-center">本页面提供的所有数据仅供信息目的，并非用于交易或投资目的。</div>
     </div>
 
-    <!-- 修改音频格式为 MP3，并确保路径正确 -->
-    <audio id="buy-sound" src="/y1897.wav"></audio>
-    <audio id="close-sound" src="/y1896.wav"></audio>
+    <!-- 提供多种音频格式支持 -->
+    <audio id="buy-sound">
+        <source src="/y1897.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/gccfund/gccfund.github.io/y1897.wav" type="audio/wav">
+        您的浏览器不支持音频播放。
+    </audio>
+    <audio id="close-sound">
+        <source src="/y1896.wav" type="audio/wav">
+        <source src="https://raw.githubusercontent.com/gccfund/gccfund.github.io/y1896.wav" type="audio/wav">
+        您的浏览器不支持音频播放。
+    </audio>
 
     <script>
         // ========== 通用工具函数 ==========
@@ -83,6 +91,7 @@
 
         // 以下是与 itick 有关的变量，可根据实际情况修改
         // 开始标识
+        const API_KEY = '8558d9dbea3c43e8bb0faa9
         const API_KEY = '8558d9dbea3c43e8bb0faa94542a9ad5018fc93a8da340fbb570be0a5daa8f5e';
         const ITICK_API_URL = 'https://api.itick.org/forex/kline?region=gb&code=XAUUSD&kType=1&limit=100';
         const UPDATE_INTERVAL = 12000; // 数据更新间隔，单位为毫秒，可根据需要调整
@@ -130,7 +139,7 @@
 
         // 初始化音频
         let audioInitialized = false;
-        const initAudio = () => {
+        const initAudio = async () => {
             const buySound = document.getElementById('buy-sound');
             const closeSound = document.getElementById('close-sound');
 
@@ -146,7 +155,17 @@
                 console.error('平仓音频加载失败');
             });
 
-            audioInitialized = true;
+            // 尝试播放一次音频以解锁自动播放
+            try {
+                await buySound.play();
+                buySound.pause();
+                await closeSound.play();
+                closeSound.pause();
+                audioInitialized = true;
+            } catch (error) {
+                console.error('音频初始化播放失败:', error);
+            }
+
             document.removeEventListener('click', initAudio);
         };
         document.addEventListener('click', initAudio);
