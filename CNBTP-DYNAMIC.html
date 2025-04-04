@@ -69,21 +69,10 @@
         <div id="xauSignal" class="text-5xl p-6 rounded-lg my-5 text-center">🔄 初始化中...</div>
         <div class="text-[#666] text-sm text-center">更新: <span id="xauTime">--</span></div>
         <div id="xauError" class="text-[#FF6B6B] text-xl my-2 text-center"></div>
-        <!-- 新增的提示信息 -->
-        <div class="text-[#666] text-xs text-center">本页面提供的所有数据仅供信息目的，并非用于交易或投资目的。</div>
     </div>
 
-    <!-- 提供多种音频格式支持 -->
-    <audio id="buy-sound">
-        <source src="/y1897.wav" type="audio/wav">
-        <source src="https://raw.githubusercontent.com/gccfund/gccfund.github.io/y1897.wav" type="audio/wav">
-        您的浏览器不支持音频播放。
-    </audio>
-    <audio id="close-sound">
-        <source src="/y1896.wav" type="audio/wav">
-        <source src="https://raw.githubusercontent.com/gccfund/gccfund.github.io/y1896.wav" type="audio/wav">
-        您的浏览器不支持音频播放。
-    </audio>
+    <audio id="buy-sound" src="/y1897.wav"></audio>
+    <audio id="close-sound" src="/y1896.wav"></audio>
 
     <script>
         // ========== 通用工具函数 ==========
@@ -91,7 +80,6 @@
 
         // 以下是与 itick 有关的变量，可根据实际情况修改
         // 开始标识
-        const API_KEY = '8558d9dbea3c43e8bb0faa9
         const API_KEY = '8558d9dbea3c43e8bb0faa94542a9ad5018fc93a8da340fbb570be0a5daa8f5e';
         const ITICK_API_URL = 'https://api.itick.org/forex/kline?region=gb&code=XAUUSD&kType=1&limit=100';
         const UPDATE_INTERVAL = 12000; // 数据更新间隔，单位为毫秒，可根据需要调整
@@ -136,39 +124,6 @@
         if ('wakeLock' in navigator) {
             requestWakeLock();
         }
-
-        // 初始化音频
-        let audioInitialized = false;
-        const initAudio = async () => {
-            const buySound = document.getElementById('buy-sound');
-            const closeSound = document.getElementById('close-sound');
-
-            // 加载音频
-            buySound.load();
-            closeSound.load();
-
-            // 添加错误处理
-            buySound.addEventListener('error', () => {
-                console.error('买入音频加载失败');
-            });
-            closeSound.addEventListener('error', () => {
-                console.error('平仓音频加载失败');
-            });
-
-            // 尝试播放一次音频以解锁自动播放
-            try {
-                await buySound.play();
-                buySound.pause();
-                await closeSound.play();
-                closeSound.pause();
-                audioInitialized = true;
-            } catch (error) {
-                console.error('音频初始化播放失败:', error);
-            }
-
-            document.removeEventListener('click', initAudio);
-        };
-        document.addEventListener('click', initAudio);
 
         // ========== 伦敦金XAU系统 ==========
         const updateXAU = async () => {
@@ -257,45 +212,29 @@
 
             if (signal === 'buy_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-long_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#00C853] to-[#00E676] border-4 border-[#69F0AE]';
-                signalElement.textContent = '✅✅ 买多';
-                if (audioInitialized) {
-                    buySound.play().catch((error) => {
-                        console.error('买入音频播放失败:', error);
-                    });
-                }
+                signalElement.textContent = '✅ 买多';
+                buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'buy_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[pulse-short_1.2s_infinite,flash_1s_infinite] bg-gradient-to-r from-[#D50000] to-[#FF5252] border-4 border-[#FF8A80]';
-                signalElement.textContent = '❌❌买空';
-                if (audioInitialized) {
-                    buySound.play().catch((error) => {
-                        console.error('买入音频播放失败:', error);
-                    });
-                }
+                signalElement.textContent = '❌ 买空';
+                buySound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'sell_long') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
                 signalElement.textContent = '🔄✅平多';
-                if (audioInitialized) {
-                    closeSound.play().catch((error) => {
-                        console.error('平仓音频播放失败:', error);
-                    });
-                }
+                closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else if (signal === 'sell_short') {
                 signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center bg-[#555] border-4 border-[#777]';
                 signalElement.textContent = '🔄❌ 平空';
-                if (audioInitialized) {
-                    closeSound.play().catch((error) => {
-                        console.error('平仓音频播放失败:', error);
-                    });
-                }
+                closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
