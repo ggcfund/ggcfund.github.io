@@ -57,39 +57,37 @@
             }
         }
 
-        @keyframes fadeInOut {
+        @keyframes sell-pulse {
             0% {
-                opacity: 0.3;
-            }
-            50% {
+                transform: scale(1);
                 opacity: 1;
-            }
-            100% {
-                opacity: 0.3;
-            }
-        }
-
-        @keyframes scaleInOut {
-            0% {
-                transform: scale(1);
+                box-shadow: 0 0 30px #777;
             }
             50% {
-                transform: scale(1.1);
+                transform: scale(1.05);
+                opacity: 0.8;
             }
             100% {
                 transform: scale(1);
+                opacity: 1;
+                box-shadow: 0 0 50px #777;
             }
         }
 
-        @keyframes colorChange {
+        @keyframes wait-pulse {
             0% {
-                background-color: #555;
+                transform: scale(1);
+                opacity: 1;
+                box-shadow: 0 0 30px #888;
             }
             50% {
-                background-color: #777;
+                transform: scale(1.05);
+                opacity: 0.8;
             }
             100% {
-                background-color: #555;
+                transform: scale(1);
+                opacity: 1;
+                box-shadow: 0 0 50px #888;
             }
         }
     </style>
@@ -186,36 +184,9 @@
             }
         };
 
-        // 计算简单移动平均线
-        const calculateSMA = (data, period) => {
-            if (data.length < period) return null;
-            const sum = data.slice(-period).reduce((acc, kLine) => acc + kLine.c, 0);
-            return sum / period;
-        };
-
-        // 计算相对强弱指数（RSI）
-        const calculateRSI = (data, period) => {
-            if (data.length < period + 1) return null;
-            let gains = 0;
-            let losses = 0;
-            for (let i = data.length - period; i < data.length; i++) {
-                const change = data[i].c - data[i - 1].c;
-                if (change > 0) {
-                    gains += change;
-                } else {
-                    losses += Math.abs(change);
-                }
-            }
-            const avgGain = gains / period;
-            const avgLoss = losses / period;
-            if (avgLoss === 0) return 100;
-            const rs = avgGain / avgLoss;
-            return 100 - (100 / (1 + rs));
-        };
-
         // ========== 信号计算函数 ==========
         const calculateSignal = (data) => {
-            if (data.length < 7) return null; // 至少需要7根K线计算指标
+            if (data.length < 4) return null; // 至少需要4根K线计算指标
             const current = data[data.length - 1];
             const prev3 = data.slice(-4, -1); // 前3根K线（不包含当前）
             const prev5Vol = data.slice(-6, -1).map(k => k.v); // 前5根成交量（不包含当前）
@@ -230,59 +201,34 @@
             const hMaxPrev3 = Math.max(...prev3.map(kLine => kLine.h));
             const lMinPrev3 = Math.min(...prev3.map(kLine => kLine.l));
 
-            const sma5 = calculateSMA(data, 5);
-            const rsi14 = calculateRSI(data, 14);
-
             let signal = null;
 
-            // 买入多单信号
-            if (
-                current.c > current.o &&
-                current.c >= current.h * 0.995 &&
-                current.v >= vMeanPrev3 * 1.5 &&
-                current.tu >= tuMeanPrev3 * 1.5 &&
-                current.h > hMaxPrev3 &&
-                current.c > sma5 &&
-                (rsi14 === null || rsi14 < 70)
-            ) {
+            // 买入多单信号，进一步放宽条件
+            if (current.c > current.o && current.c >= current.h * 0.95 &&
+                current.v >= vMeanPrev3 * 1.1 && current.tu >= tuMeanPrev3 * 1.1 &&
+                current.h > hMaxPrev3 * 0.98) {
                 signal = 'buy_long';
             }
-            // 买入空单信号
-            else if (
-                current.c < current.o &&
-                current.c <= current.l * 1.005 &&
-                current.v >= vMeanPrev3 * 1.5 &&
-                current.tu >= tuMeanPrev3 * 1.5 &&
-                current.l < lMinPrev3 &&
-                current.c < sma5 &&
-                (rsi14 === null || rsi14 > 30)
-            ) {
+            // 买入空单信号，进一步放宽条件
+            else if (current.c < current.o && current.c <= current.l * 1.05 &&
+                current.v >= vMeanPrev3 * 1.1 && current.tu >= tuMeanPrev3 * 1.1 &&
+                current.l < lMinPrev3 * 1.02) {
                 signal = 'buy_short';
             }
-            // 平仓多单信号
-            else if (
-                (current.c < current.o && current.c < prev3[prev3.length - 1].l) ||
-                (current.h <= prev3[prev3.length - 1].h && current.c < current.o && current.v <= prev3[prev3.length - 1].v * 0.7) ||
-                (current.c < sma5) ||
-                (rsi14!== null && rsi14 > 70)
-            ) {
+            // 平仓多单信号，调整条件
+            else if ((current.c < current.o && current.c < prev3[prev3.length - 1].l * 1.01) ||
+                (current.h <= prev3[prev3.length - 1].h * 1.01 && current.c < current.o && current.v <= prev3[prev3.length - 1].v * 0.85)) {
                 signal = 'sell_long';
             }
-            // 平仓空单信号
-            else if (
-                (current.c > current.o && current.c > prev3[prev3.length - 1].h) ||
-                (current.l >= prev3[prev3.length - 1].l && current.c > current.o && current.v <= prev3[prev3.length - 1].v * 0.7) ||
-                (current.c > sma5) ||
-                (rsi14!== null && rsi14 < 30)
-            ) {
+            // 平仓空单信号，调整条件
+            else if ((current.c > current.o && current.c > prev3[prev3.length - 1].h * 0.99) ||
+                (current.l >= prev3[prev3.length - 1].l * 0.99 && current.c > current.o && current.v <= prev3[prev3.length - 1].v * 0.85)) {
                 signal = 'sell_short';
             }
-            // 谨慎观察信号
-            else if (
-                (Math.abs(current.c - current.o) <= (current.h - current.l) * 0.2) +
-                (current.v <= vMeanPrev5 * 0.5) +
-                ((current.h - current.l) <= (hMaxPrev5 - lMinPrev5) * 0.1) >= 2
-            ) {
+            // 谨慎观察信号，调整条件
+            else if ((Math.abs(current.c - current.o) <= (current.h - current.l) * 0.4) +
+                (current.v <= vMeanPrev5 * 0.7) +
+                ((current.h - current.l) <= (hMaxPrev5 - lMinPrev5) * 0.3) >= 2) {
                 signal = 'wait';
             }
 
@@ -319,21 +265,21 @@
                     navigator.vibrate([100, 100, 100]);
                 }
             } else if (signal === 'sell_long') {
-                signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[fadeInOut_1s_infinite,scaleInOut_1s_infinite] bg-[#555] border-4 border-[#777]';
+                signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[sell-pulse_1.2s_infinite,flash_1s_infinite] bg-[#555] border-4 border-[#777]';
                 signalElement.textContent = '🔄✅平多';
                 closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else if (signal === 'sell_short') {
-                signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[fadeInOut_1s_infinite,scaleInOut_1s_infinite] bg-[#555] border-4 border-[#777]';
+                signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[sell-pulse_1.2s_infinite,flash_1s_infinite] bg-[#555] border-4 border-[#777]';
                 signalElement.textContent = '🔄❌ 平空';
                 closeSound.play();
                 if ('vibrate' in navigator) {
                     navigator.vibrate(300);
                 }
             } else {
-                signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[colorChange_2s_infinite]';
+                signalElement.className = 'text-5xl p-6 rounded-lg my-5 text-center animate-[wait-pulse_1.2s_infinite,flash_1s_infinite]';
                 signalElement.textContent = '🔄🔄 谨慎观察';
             }
 
